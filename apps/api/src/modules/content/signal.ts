@@ -30,6 +30,20 @@ const STRATEGIC = [
   'darbe',
   'istifa',
   'mahkeme',
+  // Yargısal-siyasi (siyasetçiye/kuruma yönelik hukuki süreç = stratejik).
+  // NOT: kaza/cinayet gibi asayiş zaten NOISE'ta; "kaza soruşturması" net negatif kalır.
+  'tutukl', // tutuklama/tutuklandı/tutuklu
+  'gözaltı',
+  'soruşturma',
+  'iddianame',
+  'yargı', // yargıtay/yargılama
+  'dava',
+  'beraat',
+  'dokunulmazlık',
+  'kayyum',
+  'kayyım',
+  'fezleke',
+  'siyasi yasak',
   // Ekonomi
   'enflasyon',
   'faiz',
@@ -146,9 +160,14 @@ function hits(norm: string, words: string[]): number {
   return n;
 }
 
-/** Stratejik vuruş +2, gürültü vuruşu −3 (gürültü baskınsa net negatif). */
+/**
+ * Stratejik vuruş +2, gürültü vuruşu −4. Gürültü ağırlığı stratejikten yüksek:
+ * yargısal terimler (soruşturma/gözaltı) hem siyasi hem asayiş haberinde geçtiğinden,
+ * asayiş ismi (kaza/cinayet) varsa net pozitife çıkmasın → "trafik kazası
+ * soruşturması" ≤0 (asayiş) kalırken "siyasi yasak/tutuklama" (asayiş ismi yok) pozitif.
+ */
 export function scoreSignal(text: string): number {
   if (!text) return 0;
   const norm = normalize(text);
-  return hits(norm, STRATEGIC) * 2 - hits(norm, NOISE) * 3;
+  return hits(norm, STRATEGIC) * 2 - hits(norm, NOISE) * 4;
 }

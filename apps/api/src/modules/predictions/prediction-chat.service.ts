@@ -9,8 +9,10 @@ import { CountriesRepository } from '../countries/countries.repository';
 import { CredentialsService } from '../credentials/credentials.service';
 import {
   buildChatMessages,
+  buildEntityQueryMessages,
   ChatAnswer,
   parseChatAnswer,
+  parseEntityQueries,
 } from '../llm/chat.prompt';
 import { LlmCoreService } from '../llm/llm.service';
 import { SearchService } from '../search/search.service';
@@ -59,9 +61,33 @@ export class PredictionChatService {
 
     const countryEn = country.name ?? country.name_tr ?? country.iso2;
     const items = await this.context.itemsFor(country.iso2);
-    const [research, web] = await Promise.all([
+    // Çok-hop GÜNCEL DURUM: sorudaki kilit aktörleri (ucuz flash) çıkar → güncel
+    // hukuki/siyasi durumlarını canlı web'den getir. Modelin eski eğitim bilgisiyle
+    // (ör. "aday İmamoğlu") cevap vermesini engeller. Ana araştırmayla PARALEL → ek
+    // seri gecikme ~yok; anahtar/sonuç yoksa null (graceful, blok hiç eklenmez).
+    const statusPromise: Promise<{
+      summary: string;
+      sources: Array<{ title: string; url: string }>;
+    } | null> = (async () => {
+      if (!this.search.enabled) return null;
+      try {
+        const raw = await this.llm.chat(
+          credential.provider,
+          credential.apiKey,
+          buildEntityQueryMessages({ question: query, countryName: countryEn }),
+          { model, jsonMode: true, temperature: 0, maxTokens: 512 },
+        );
+        const queries = parseEntityQueries(raw);
+        return queries.length ? await this.search.entityStatus(queries) : null;
+      } catch {
+        return null;
+      }
+    })();
+
+    const [research, web, status] = await Promise.all([
       this.research.gather(userId, country.iso2, query, countryEn),
       this.search.forTopic(countryEn, query).catch(() => null),
+      statusPromise,
     ]);
     const messages = buildChatMessages({
       countryName: country.name_tr ?? country.name,
@@ -80,6 +106,7 @@ export class PredictionChatService {
       })),
       webContext: web?.summary ?? null,
       webSources: web?.sources ?? [],
+      currentStatus: status?.summary ?? null,
     });
 
     let answer: ChatAnswer | null = null;
@@ -118,9 +145,10 @@ export class PredictionChatService {
         }`,
       );
     }
-    if (web?.sources?.length) {
+    const extraSources = [...(web?.sources ?? []), ...(status?.sources ?? [])];
+    if (extraSources.length) {
       const seen = new Set(answer.sources.map((source) => source.url));
-      for (const source of web.sources) {
+      for (const source of extraSources) {
         if (!seen.has(source.url)) {
           answer.sources.push(source);
           seen.add(source.url);

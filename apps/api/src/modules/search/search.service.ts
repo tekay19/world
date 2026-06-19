@@ -38,6 +38,46 @@ export class SearchService {
     return { summary: lines.join('\n\n').slice(0, 5000), sources: sources.slice(0, 8) };
   }
 
+  /**
+   * Çok-hop varlık durumu: verilen kişi/kurum sorgularını TAZELİK odaklı paralel
+   * arar → "şu an X tutuklu/yasaklı/görevde mi" gibi GÜNCEL gerçeği yüzeye çıkarır.
+   * Amaç: modelin eski eğitim bilgisiyle (ör. "aday İmamoğlu") cevap vermesini
+   * engelleyip kararı güncel kanıta dayandırmak. Anahtar/sonuç yoksa null (graceful).
+   */
+  async entityStatus(queries: string[]): Promise<WebContext | null> {
+    if (!this.tavily.enabled || queries.length === 0) return null;
+    const responses = (
+      await Promise.all(
+        queries
+          .slice(0, 3)
+          .map((q) =>
+            this.tavily.search(`${q} güncel durum son gelişmeler 2026`, {
+              maxResults: 4,
+            }),
+          ),
+      )
+    ).filter((r): r is NonNullable<typeof r> => r != null);
+    if (responses.length === 0) return null;
+
+    const sources: Array<{ title: string; url: string }> = [];
+    const seen = new Set<string>();
+    const lines: string[] = [];
+    for (const r of responses) {
+      if (r.answer) lines.push(r.answer.trim());
+      for (const res of r.results) {
+        if (!res.url || seen.has(res.url)) continue;
+        seen.add(res.url);
+        sources.push({ title: res.title || res.url, url: res.url });
+        lines.push(`[${res.title}] ${res.content.slice(0, 300)}`);
+      }
+    }
+    if (lines.length === 0) return null;
+    return {
+      summary: lines.join('\n\n').slice(0, 4000),
+      sources: sources.slice(0, 8),
+    };
+  }
+
   /** Ülke + odak için çok-sorgulu arama → tekilleştirilmiş bağlam + kaynak listesi. */
   async forContext(
     countryName: string,

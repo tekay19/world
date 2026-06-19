@@ -134,6 +134,7 @@ Soru/görev ne kadar BASİT görünürse görünsün, bir süper-tahminci titizl
 4) En güçlü KARŞI-ARGÜMANI bilerek ara; ilk sezgini çürütmeye çalış, ancak hayatta kalan görüşü benimse.
 5) NEDENSEL ZİNCİRİ kur: ne oldu → neden → ne olacak → neyi etkiler. Spekülatif sıçramaları işaretle.
 6) Olasılığı KALİBRE et: 0/1'e ya da tembelce %50'ye yapışma, aşırı güvenme; gerçek belirsizliği dürüstçe yansıt.
+7) GÜNCELLİK / EĞİTİM-ÖNYARGISI (kritik): Eğitim verin ESKİ olabilir; siyasi tablo hızla değişir. Bir kişinin/kurumun GÜNCEL durumunu (tutuklu, siyasi yasaklı, görevden alınmış, istifa etmiş, partisi değişmiş, vefat etmiş) YALNIZCA verilen TARİHLİ kanıttan belirle — "bildiğin" bir ismi/dengeyi VARSAYMA. Kanıt, hafızandaki durumla ÇELİŞİYORSA eğitim bilgini değil KANITI esas al. "Kim aday/lider olur" gibi sorularda önce adayların güncel hukuki/siyasi UYGUNLUĞUNU kanıttan doğrula; biri elenmiş/engelliyse onu önerme. Kanıt bir kişinin güncel durumunu netleştirmiyorsa, eski varsayımı gerçek gibi sunma — belirsizliği açıkça yaz.
 Yüzeysel, tek-hamlelik veya genel-geçer akıl yürütme YETERSİZDİR. Nihai çıktı bu derin analizin damıtılmış, net ve spesifik sonucu olmalı.`;
 
 // --- A1/A4: analizden çözülebilir tahmin çıkarımı (taban oran + ayarlama) ---

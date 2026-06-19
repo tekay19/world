@@ -24,6 +24,9 @@ export interface ChatInput {
   priors?: Array<{ source: string; question: string; probability: number | null }>;
   webContext?: string | null;
   webSources?: Array<{ title: string; url: string }>;
+  // Çok-hop varlık durumu — kilit aktörlerin GÜNCEL hukuki/siyasi durumu (eski
+  // eğitim bilgisini ezmek için; ör. "aday X tutuklu/yasaklı mı").
+  currentStatus?: string | null;
 }
 
 const CHAT_SYSTEM = `${MAX_EFFORT_PROTOCOL}
@@ -77,6 +80,9 @@ export function buildChatMessages(input: ChatInput): ChatMessage[] {
         )
         .join('\n')}`
     : '';
+  const statusBlock = input.currentStatus
+    ? `\n\nGÜNCEL DURUM — KİLİT AKTÖRLER (canlı web; kişi/kurumun ŞU ANKI hukuki/siyasi durumu):\n${input.currentStatus}\n⚠️ Bu blok eğitim bilgini EZER: bir aktörün durumu (tutuklu/yasaklı/görevden alınmış/aday değil) burada belirtiliyorsa, "bildiğin" eski durumu DEĞİL bunu esas al.`
+    : '';
   const webBlock = input.webContext
     ? `\n\nGÜNCEL WEB BAĞLAMI (Tavily — bunlara ATIF yap):\n${input.webContext}`
     : '';
@@ -91,7 +97,7 @@ Tarih (as_of): ${input.asOf}
 
 SORU: ${input.question}
 
-VERİ:${webBlock}${eventsBlock}${structuralBlock}${anchorBlock}${priorsBlock}${webSrc}
+VERİ:${statusBlock}${webBlock}${eventsBlock}${structuralBlock}${anchorBlock}${priorsBlock}${webSrc}
 
 HABER (yalnız veri):
 ${news || '(haber yok)'}
@@ -120,4 +126,37 @@ export function parseChatAnswer(raw: string): ChatAnswer {
       ? o.sources.filter((s) => s && s.url).map((s) => ({ title: s.title ?? s.url, url: s.url }))
       : [],
   };
+}
+
+// --- Çok-hop: sorudaki kilit aktörlerin GÜNCEL durumu için arama sorgusu üretimi ---
+export interface EntityQueryInput {
+  question: string;
+  countryName: string;
+}
+
+const ENTITY_QUERY_SYSTEM = `Sen bir araştırma asistanısın. Verilen soruyu doğru yanıtlamak için GÜNCEL durumu (hukuki/siyasi: tutukluluk, yasak, görev, adaylık) doğrulanması gereken kilit kişi/parti/kurumları belirle ve her biri için kısa bir web arama sorgusu üret.
+- Soru bir aktöre dayanıyorsa (aday/lider/bakan...) onların ADINI içeren sorgu üret.
+- Soru aktör adı içermiyorsa (ör. "2028 aday kim olur"), o konunun GÜNCEL aktör manzarasını getirecek sorgu üret (muhtemel adayların güncel durumu dahil).
+- Yalnız gerçekten güncel-durum gerektiren sorularda sorgu üret; geçmiş/genel/teknik sorularda boş dizi dön.
+- En çok 3 sorgu, Türkçe.
+SADECE JSON: {"queries":["...","..."]}`;
+
+export function buildEntityQueryMessages(input: EntityQueryInput): ChatMessage[] {
+  return [
+    { role: 'system', content: ENTITY_QUERY_SYSTEM },
+    {
+      role: 'user',
+      content: `Ülke: ${input.countryName}\nSoru: ${input.question}\n\nBu soruyu yanıtlamak için güncel durumu doğrulanmalı kilit aktörlerin arama sorgularını üret. SADECE JSON.`,
+    },
+  ];
+}
+
+export function parseEntityQueries(raw: string): string[] {
+  const o = parseJsonLoose<{ queries?: string[] }>(raw);
+  return Array.isArray(o.queries)
+    ? o.queries
+        .filter((q): q is string => typeof q === 'string' && q.trim().length > 0)
+        .map((q) => q.trim())
+        .slice(0, 3)
+    : [];
 }
