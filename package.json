@@ -1,0 +1,29 @@
+{
+  "name": "dunya-analiz",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Dünya Gelecek Tahmin & Analiz Sistemi — uzayda dönen 3D Dünya üzerinde tarafsız, çok perspektifli ülke analizi",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,worker,scheduler,web -c blue,magenta,yellow,green \"npm run dev -w @dunya/api\" \"npm run dev:worker -w @dunya/api\" \"npm run dev:scheduler -w @dunya/api\" \"npm run dev -w @dunya/web\"",
+    "dev:api": "npm run dev -w @dunya/api",
+    "dev:web": "npm run dev -w @dunya/web",
+    "build": "npm run build -w @dunya/api && npm run build -w @dunya/web",
+    "lint": "npm run lint -w @dunya/api && npm run lint -w @dunya/web",
+    "test": "npm test -w @dunya/api",
+    "infra:up": "docker compose up -d postgres redis",
+    "infra:down": "docker compose down",
+    "infra:logs": "docker compose logs -f",
+    "db:migrate": "npm run migrate -w @dunya/api",
+    "db:seed": "npm run seed -w @dunya/api"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

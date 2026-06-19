@@ -1,0 +1,40 @@
+# deps
+node_modules/
+.pnp
+.pnp.js
+
+# builds
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+
+# env & secrets — ASLA kommitlemeyin
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+secrets/
+.secrets/
+
+# logs
+*.log
+npm-debug.log*
+
+# os / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# python (embedding servisi)
+__pycache__/
+*.pyc
+.venv/
+services/embedding/models/
+
+# yerel araç/derleme artıkları
+.claude/
+err.txt

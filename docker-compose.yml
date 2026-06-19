@@ -1,0 +1,49 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: dunya-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-dunya}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dunya}
+      POSTGRES_DB: ${POSTGRES_DB:-dunya}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dunya}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: dunya-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Anahtarsız self-hosted çok dilli embedding servisi (S3'te aktif kullanılır).
+  # S0/S1 için opsiyonel; `--profile ai` ile başlatılır.
+  embedding:
+    build: ./services/embedding
+    container_name: dunya-embedding
+    restart: unless-stopped
+    profiles: ["ai"]
+    ports:
+      - "${EMBEDDING_PORT:-8000}:8000"
+    environment:
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-intfloat/multilingual-e5-small}
+
+volumes:
+  pgdata:
+  redisdata:
